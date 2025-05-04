@@ -22,9 +22,16 @@ export default function Dashboard() {
     setMounted(true)
     // Load saved captures from localStorage
     const loadCaptures = () => {
-      const savedCaptures = localStorage.getItem('captures')
-      if (savedCaptures) {
-        setCaptures(JSON.parse(savedCaptures))
+      try {
+        const savedCaptures = localStorage.getItem('captures')
+        if (savedCaptures) {
+          const parsedCaptures = JSON.parse(savedCaptures)
+          if (Array.isArray(parsedCaptures)) {
+            setCaptures(parsedCaptures)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading captures:', error)
       }
     }
 
