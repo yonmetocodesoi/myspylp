@@ -46,7 +46,7 @@ export function CaptureDataDisplay({ data }: CaptureDataDisplayProps) {
       }
     }
 
-    if (deviceInfo?.ip) {
+    if (deviceInfo?.ip && deviceInfo.ip !== "Unknown") {
       fetchLocationData()
     } else {
       setLoading(false)
