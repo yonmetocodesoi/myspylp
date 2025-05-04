@@ -21,9 +21,28 @@ export default function Dashboard() {
   useEffect(() => {
     setMounted(true)
     // Load saved captures from localStorage
-    const savedCaptures = localStorage.getItem('captures')
-    if (savedCaptures) {
-      setCaptures(JSON.parse(savedCaptures))
+    const loadCaptures = () => {
+      const savedCaptures = localStorage.getItem('captures')
+      if (savedCaptures) {
+        setCaptures(JSON.parse(savedCaptures))
+      }
+    }
+
+    // Load initial captures
+    loadCaptures()
+
+    // Set up storage event listener to detect changes from other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'captures') {
+        loadCaptures()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+
+    // Clean up
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
     }
   }, [])
 
@@ -57,7 +76,7 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold glow-text">MySpy Dashboard</h1>
               <Button onClick={generateLink} className="bg-blue-600 hover:bg-blue-700">
                 <LinkIcon className="mr-2 h-4 w-4" />
-                Generate Link
+                Generate Tracking Link
               </Button>
             </div>
 
@@ -66,14 +85,17 @@ export default function Dashboard() {
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2">
                     <LinkIcon className="h-5 w-5 text-blue-400" />
-                    <a
-                      href={generatedLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 break-all"
-                    >
-                      {generatedLink}
-                    </a>
+                    <div>
+                      <p className="text-gray-400 text-sm mb-2">Share this link with the target:</p>
+                      <a
+                        href={generatedLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 break-all"
+                      >
+                        {generatedLink}
+                      </a>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
