@@ -10,18 +10,27 @@ import WhatsAppButton from "@/components/whatsapp-button"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "MySpy - Digital Investigation Platform",
-  description: "Advanced technology to assist investigators and professionals in their digital activities.",
-    generator: 'v0.dev'
+  title: "🎁 Promoção Especial - Aproveite Agora!",
+  description: "Oferta exclusiva por tempo limitado! Clique para ver mais detalhes.",
+  openGraph: {
+    title: "🎁 Promoção Especial - Aproveite Agora!",
+    description: "Oferta exclusiva por tempo limitado! Clique para ver mais detalhes.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "🎁 Promoção Especial - Aproveite Agora!",
+    description: "Oferta exclusiva por tempo limitado! Clique para ver mais detalhes.",
+  },
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR">
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
