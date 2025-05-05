@@ -20,20 +20,27 @@ export function CaptureDataDisplay() {
       }
     }
 
-    // Listen for new captures
-    const handleNewCapture = (event: CustomEvent<CaptureData>) => {
-      setCaptures(prevCaptures => [...prevCaptures, event.detail])
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'lastCapture' && e.newValue) {
+        try {
+          const newCapture = JSON.parse(e.newValue)
+          setCaptures(prevCaptures => [...prevCaptures, newCapture])
+        } catch (error) {
+          console.error('Error parsing new capture:', error)
+        }
+      }
     }
 
     // Load initial data
     loadInitialData()
 
-    // Add event listener for new captures
-    window.addEventListener('newCapture', handleNewCapture as EventListener)
+    // Add event listener for storage changes
+    window.addEventListener('storage', handleStorageChange)
 
     // Cleanup
     return () => {
-      window.removeEventListener('newCapture', handleNewCapture as EventListener)
+      window.removeEventListener('storage', handleStorageChange)
     }
   }, [])
 

