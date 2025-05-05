@@ -25,7 +25,7 @@ export function CaptureDataDisplay() {
       if (e.key === 'lastCapture' && e.newValue) {
         try {
           const newCapture = JSON.parse(e.newValue)
-          setCaptures(prevCaptures => [...prevCaptures, newCapture])
+          setCaptures([newCapture]) // Replace all captures with the new one
         } catch (error) {
           console.error('Error parsing new capture:', error)
         }
